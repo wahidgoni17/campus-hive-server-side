@@ -24,7 +24,11 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     await client.connect();
     const usersCollection = client.db("campusDb").collection("users");
+    const reviewCollection = client.db("campusDb").collection("reviews")
     const collegeCollection = client.db("campusDb").collection("colleges");
+    const collegeCartCollection = client
+      .db("campusDb")
+      .collection("collegeCart");
 
     app.get("/users", async (req, res) => {
       const result = await usersCollection.find().toArray();
@@ -45,6 +49,33 @@ async function run() {
       const result = await collegeCollection.find().toArray();
       res.send(result);
     });
+
+    app.get("/collegeCart", async(req, res)=>{
+      const email = req.query.email
+      if (!email) {
+        res.send({});
+      }
+      const query = {email : email}
+      const result = await collegeCartCollection.find(query).toArray()
+      res.send(result)
+    })
+
+    app.post("/collegeCart", async (req, res) => {
+      const item = req.body;
+      const result = await collegeCartCollection.insertOne(item);
+      res.send(result);
+    });
+
+    app.get("/reviews", async(req, res) =>{
+      const result = await reviewCollection.find().toArray()
+      res.send(result)
+    })
+
+    app.post("/reviews", async(req, res) =>{
+      const review = req.body
+      const result = await reviewCollection.insertOne(review)
+      res.send(result)
+    })
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
