@@ -1,12 +1,12 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const port = process.env.PORT || 4560;
 
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@wahiddatabase1.1tmbx62.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -24,7 +24,7 @@ async function run() {
     // Connect the client to the server	(optional starting in v4.7)
     // await client.connect();
     const usersCollection = client.db("campusDb").collection("users");
-    const reviewCollection = client.db("campusDb").collection("reviews")
+    const reviewCollection = client.db("campusDb").collection("reviews");
     const collegeCollection = client.db("campusDb").collection("colleges");
     const collegeCartCollection = client
       .db("campusDb")
@@ -45,20 +45,34 @@ async function run() {
       res.send(result);
     });
 
+    app.get("/colleges", async(req, res) =>{
+      const result = await collegeCollection.find().toArray()
+      res.send(result)
+    })
+
     app.get("/colleges", async (req, res) => {
-      const result = await collegeCollection.find().toArray();
+      const search = req.query.search;
+      const query = { college_name: { $regex: search, $options: "i" } };
+      const result = await collegeCollection.find(query).toArray();
       res.send(result);
     });
 
-    app.get("/collegeCart", async(req, res)=>{
-      const email = req.query.email
+    app.get("/colleges/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await collegeCollection.findOne(query);
+      res.send(result);
+    });
+
+    app.get("/collegeCart", async (req, res) => {
+      const email = req.query.email;
       if (!email) {
         res.send({});
       }
-      const query = {email : email}
-      const result = await collegeCartCollection.find(query).toArray()
-      res.send(result)
-    })
+      const query = { email: email };
+      const result = await collegeCartCollection.find(query).toArray();
+      res.send(result);
+    });
 
     app.post("/collegeCart", async (req, res) => {
       const item = req.body;
@@ -66,16 +80,16 @@ async function run() {
       res.send(result);
     });
 
-    app.get("/reviews", async(req, res) =>{
-      const result = await reviewCollection.find().toArray()
-      res.send(result)
-    })
+    app.get("/reviews", async (req, res) => {
+      const result = await reviewCollection.find().toArray();
+      res.send(result);
+    });
 
-    app.post("/reviews", async(req, res) =>{
-      const review = req.body
-      const result = await reviewCollection.insertOne(review)
-      res.send(result)
-    })
+    app.post("/reviews", async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
